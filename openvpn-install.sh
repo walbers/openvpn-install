@@ -156,51 +156,58 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		[[ -z "$ip6_number" ]] && ip6_number="1"
 		ip6=$(ip -6 addr | grep 'inet6 [23]' | cut -d '/' -f 1 | grep -oE '([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}' | sed -n "$ip6_number"p)
 	fi
-	echo
-	echo "Which protocol should OpenVPN use?"
-	echo "   1) UDP (recommended)"
-	echo "   2) TCP"
-	read -p "Protocol [1]: " protocol
-	until [[ -z "$protocol" || "$protocol" =~ ^[12]$ ]]; do
-		echo "$protocol: invalid selection."
-		read -p "Protocol [1]: " protocol
-	done
-	case "$protocol" in
-		1|"") 
-		protocol=udp
-		;;
-		2) 
-		protocol=tcp
-		;;
-	esac
-	echo
-	echo "What port should OpenVPN listen to?"
-	read -p "Port [1194]: " port
-	until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
-		echo "$port: invalid port."
-		read -p "Port [1194]: " port
-	done
-	[[ -z "$port" ]] && port="1194"
-	echo
-	echo "Select a DNS server for the clients:"
-	echo "   1) Current system resolvers"
-	echo "   2) Google"
-	echo "   3) 1.1.1.1"
-	echo "   4) OpenDNS"
-	echo "   5) Quad9"
-	echo "   6) AdGuard"
-	read -p "DNS server [1]: " dns
-	until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
-		echo "$dns: invalid selection."
-		read -p "DNS server [1]: " dns
-	done
-	echo
-	echo "Enter a name for the first client:"
-	read -p "Name [client]: " unsanitized_client
-	# Allow a limited set of characters to avoid conflicts
-	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
-	[[ -z "$client" ]] && client="client"
-	echo
+	# echo
+	# echo "Which protocol should OpenVPN use?"
+	# echo "   1) UDP (recommended)"
+	# echo "   2) TCP"
+	# read -p "Protocol [1]: " protocol
+	# until [[ -z "$protocol" || "$protocol" =~ ^[12]$ ]]; do
+	# 	echo "$protocol: invalid selection."
+	# 	read -p "Protocol [1]: " protocol
+	# done
+	# case "$protocol" in
+	# 	1|"") 
+	# 	protocol=udp
+	# 	;;
+	# 	2) 
+	# 	protocol=tcp
+	# 	;;
+	# esac
+	$protocol=udp
+
+	# echo
+	# echo "What port should OpenVPN listen to?"
+	# read -p "Port [1194]: " port
+	# until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
+	# 	echo "$port: invalid port."
+	# 	read -p "Port [1194]: " port
+	# done
+	# [[ -z "$port" ]] && port="1194"
+	$port=1194
+
+	# echo
+	# echo "Select a DNS server for the clients:"
+	# echo "   1) Current system resolvers"
+	# echo "   2) Google"
+	# echo "   3) 1.1.1.1"
+	# echo "   4) OpenDNS"
+	# echo "   5) Quad9"
+	# echo "   6) AdGuard"
+	# read -p "DNS server [1]: " dns
+	# until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
+	# 	echo "$dns: invalid selection."
+	# 	read -p "DNS server [1]: " dns
+	# done
+	$dns=3
+
+	# echo
+	# echo "Enter a name for the first client:"
+	# read -p "Name [client]: " unsanitized_client
+	# # Allow a limited set of characters to avoid conflicts
+	# client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
+	# [[ -z "$client" ]] && client="client"
+	# echo
+	$client="big"
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall if firewalld or iptables are not already available
 	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
