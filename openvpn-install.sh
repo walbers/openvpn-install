@@ -124,7 +124,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		[[ -z "$ip_number" ]] && ip_number="1"
 		ip=$(ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p)
 	fi
-	# If $ip is a private IP address, the server must be behind NAT
+	# If $ip is a private IP address, the server must be behind NAT
 	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
@@ -173,7 +173,9 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# 	protocol=tcp
 	# 	;;
 	# esac
-	$protocol=udp
+
+	$protocol = "udp"
+
 
 	# echo
 	# echo "What port should OpenVPN listen to?"
@@ -182,9 +184,8 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# 	echo "$port: invalid port."
 	# 	read -p "Port [1194]: " port
 	# done
-	# [[ -z "$port" ]] && port="1194"
-	$port=1194
-
+	$port="1194"
+	[[ -z "$port" ]] && port="1194"
 	# echo
 	# echo "Select a DNS server for the clients:"
 	# echo "   1) Current system resolvers"
@@ -198,16 +199,15 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# 	echo "$dns: invalid selection."
 	# 	read -p "DNS server [1]: " dns
 	# done
-	$dns=3
-
+	$dns="1"
 	# echo
 	# echo "Enter a name for the first client:"
 	# read -p "Name [client]: " unsanitized_client
-	# # Allow a limited set of characters to avoid conflicts
-	# client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
-	# [[ -z "$client" ]] && client="client"
-	# echo
-	$client="big"
+	$unsanitized_client="lucky"
+	# Allow a limited set of characters to avoid conflicts
+	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
+	[[ -z "$client" ]] && client="client"
+	echo
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall if firewalld or iptables are not already available
 	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
@@ -221,7 +221,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 			firewall="iptables"
 		fi
 	fi
-	#read -n1 -r -p "Press any key to continue..."
+	# read -n1 -r -p "Press any key to continue..."
 	# If running inside a container, disable LimitNPROC to prevent conflicts
 	if systemd-detect-virt -cq; then
 		mkdir /etc/systemd/system/openvpn-server@server.service.d/ 2>/dev/null
