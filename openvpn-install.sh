@@ -95,10 +95,12 @@ new_client () {
 	echo "<tls-crypt>"
 	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
 	echo "</tls-crypt>"
-	} > ~/"$client".ovpn
+	} > ~/ovpn_files/"$client".ovpn
 }
 
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
+	mkdir ~/ovpn_files
+
 	# Detect some Debian minimal setups where neither wget nor curl are installed
 	if ! hash wget 2>/dev/null && ! hash curl 2>/dev/null; then
 		echo "Wget is required to use this installer."
@@ -174,7 +176,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# 	;;
 	# esac
 
-	$protocol = "udp"
+	protocol="udp"
 
 
 	# echo
@@ -184,7 +186,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# 	echo "$port: invalid port."
 	# 	read -p "Port [1194]: " port
 	# done
-	$port="1194"
+	port="1194"
 	[[ -z "$port" ]] && port="1194"
 	# echo
 	# echo "Select a DNS server for the clients:"
@@ -199,11 +201,11 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# 	echo "$dns: invalid selection."
 	# 	read -p "DNS server [1]: " dns
 	# done
-	$dns="1"
+	dns="1"
 	# echo
 	# echo "Enter a name for the first client:"
 	# read -p "Name [client]: " unsanitized_client
-	$unsanitized_client="lucky"
+	unsanitized_client="lucky"
 	# Allow a limited set of characters to avoid conflicts
 	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 	[[ -z "$client" ]] && client="client"
@@ -443,36 +445,47 @@ verb 3" > /etc/openvpn/server/client-common.txt
 	echo "The client configuration is available in:" ~/"$client.ovpn"
 	echo "New clients can be added by running this script again."
 else
-	clear
+	# clear
 	echo "OpenVPN is already installed."
-	echo
-	echo "Select an option:"
-	echo "   1) Add a new client"
-	echo "   2) Revoke an existing client"
-	echo "   3) Remove OpenVPN"
-	echo "   4) Exit"
-	read -p "Option: " option
-	until [[ "$option" =~ ^[1-4]$ ]]; do
-		echo "$option: invalid selection."
-		read -p "Option: " option
-	done
+	# echo $1
+	# echo 
+	# echo "Select an option:"
+	# echo "   1) Add a new client"
+	# echo "   2) Revoke an existing client"
+	# echo "   3) Remove OpenVPN"
+	# echo "   4) Exit"
+	# read -p "Option: " option
+	# until [[ "$option" =~ ^[1-4]$ ]]; do
+	# 	echo "$option: invalid selection."
+	# 	read -p "Option: " option
+	# done
+	if [ "$1" == "remove" ]; then
+		option="3"
+	else
+		option="1"
+	fi
+
+
 	case "$option" in
 		1)
-			echo
-			echo "Provide a name for the client:"
-			read -p "Name: " unsanitized_client
-			client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
-			while [[ -z "$client" || -e /etc/openvpn/server/easy-rsa/pki/issued/"$client".crt ]]; do
-				echo "$client: invalid name."
-				read -p "Name: " unsanitized_client
+			# echo
+			# echo "Provide a name for the client:"
+			# read -p "Name: " unsanitized_client
+			for unsanitized_client in {1..10}
+			do
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
+				# while [[ -z "$client" || -e /etc/openvpn/server/easy-rsa/pki/issued/"$client".crt ]]; do
+				# 	echo "$client: invalid name."
+				# 	read -p "Name: " unsanitized_client
+				# 	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
+				# done
+				cd /etc/openvpn/server/easy-rsa/
+				EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
+				# Generates the custom client.ovpn
+				new_client
+				echo
+				echo "$client added. Configuration available in:" ~/"$client.ovpn"
 			done
-			cd /etc/openvpn/server/easy-rsa/
-			EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
-			# Generates the custom client.ovpn
-			new_client
-			echo
-			echo "$client added. Configuration available in:" ~/"$client.ovpn"
 			exit
 		;;
 		2)
@@ -516,13 +529,15 @@ else
 			exit
 		;;
 		3)
-			echo
-			read -p "Confirm OpenVPN removal? [y/N]: " remove
-			until [[ "$remove" =~ ^[yYnN]*$ ]]; do
-				echo "$remove: invalid selection."
-				read -p "Confirm OpenVPN removal? [y/N]: " remove
-			done
+			# echo
+			# read -p "Confirm OpenVPN removal? [y/N]: " remove
+			# until [[ "$remove" =~ ^[yYnN]*$ ]]; do
+			# 	echo "$remove: invalid selection."
+			# 	read -p "Confirm OpenVPN removal? [y/N]: " remove
+			# done
+			remove="y"
 			if [[ "$remove" =~ ^[yY]$ ]]; then
+				rm -rf ~/ovpn_files
 				port=$(grep '^port ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
 				protocol=$(grep '^proto ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
 				if systemctl is-active --quiet firewalld.service; then
