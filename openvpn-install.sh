@@ -461,8 +461,10 @@ else
 	# done
 	if [ "$1" == "remove" ]; then
 		option="3"
-	else
+	elif [ "$1" == "certs" ]; then
 		option="1"
+	else
+		option="4"
 	fi
 
 
